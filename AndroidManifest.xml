@@ -71,6 +71,11 @@
 	    <activity android:name=".settings.RedditPreferencesPage"></activity>
 	    <activity android:name=".browser.BrowserActivity" android:configChanges="keyboardHidden|orientation"></activity>
 	    <service android:name=".mail.EnvelopeService" android:label="@string/pref_mail_notification_service"></service>
+	    <activity android:name=".search.RedditSearchActivity">
+	        <intent-filter>
+	            <action android:name="android.intent.action.SEARCH"></action>
+	        </intent-filter>
+	    </activity>
 	</application>
     <uses-sdk android:minSdkVersion="4" android:targetSdkVersion="7" />
     <supports-screens />

@@ -87,6 +87,7 @@ import com.andrewshu.android.reddit.profile.ProfileActivity;
 import com.andrewshu.android.reddit.reddits.PickSubredditActivity;
 import com.andrewshu.android.reddit.reddits.SubscribeTask;
 import com.andrewshu.android.reddit.reddits.UnsubscribeTask;
+import com.andrewshu.android.reddit.search.RedditSearchActivity;
 import com.andrewshu.android.reddit.settings.RedditPreferencesPage;
 import com.andrewshu.android.reddit.settings.RedditSettings;
 import com.andrewshu.android.reddit.submit.SubmitLinkActivity;
@@ -263,6 +264,11 @@ public final class ThreadsListActivity extends ListActivity {
     			}
     		}
     		break;
+    	case 4:
+    		if(resultCode==Activity.RESULT_OK){
+    			Toast.makeText(this, intent.getDataString(), Toast.LENGTH_LONG).show();
+    		}
+    		break;
     	default:
     		break;
     	}
@@ -299,7 +305,8 @@ public final class ThreadsListActivity extends ListActivity {
         	//int duration = Toast.LENGTH_LONG;
         	//Toast toast = Toast.makeText(this, text, duration);
         	//toast.show();
-        	onSearchRequested();
+        	
+        	startActivityForResult(new Intent(this, RedditSearchActivity.class), 4);
         	return true;
         	
         }
