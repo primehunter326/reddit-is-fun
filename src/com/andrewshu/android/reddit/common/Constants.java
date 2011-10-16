@@ -176,6 +176,7 @@ public class Constants {
     public static final String USERNAME_KEY = "username";
     public static final String VOTE_TARGET_THING_INFO_KEY = "vote_target_thing_info";
     public static final String WHICH_INBOX_KEY = "which_inbox";
+    public static final String QUERY_KEY = "search_query";
     
     public static final String SUBMIT_KIND_LINK = "link";
     public static final String SUBMIT_KIND_SELF = "self";
@@ -322,4 +323,6 @@ public class Constants {
     																	  //which this app supports, do not properly handle SSL certs
     // A short HTML file returned by reddit, so we can get the modhash
     public static final String MODHASH_URL = REDDIT_BASE_URL + "/r";
+
+	
 }
