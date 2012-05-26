@@ -59,9 +59,10 @@ public abstract class DownloadThreadsTask extends AsyncTask<Void, Long, Boolean>
     protected RedditSettings mSettings = new RedditSettings();
 	
 	//the GET parameters to be passed when performing a search
-	//just get it to recognize the query first, get sort working later.
 	protected String mSearchQuery;
-	protected String mSortSearch; //not implemented yet
+	protected String mSortSearch;
+	protected boolean mLimitSearch;
+	protected boolean mIsSearch;
 	
 	protected String mUserError = "Error retrieving subreddit info.";
 	
@@ -75,10 +76,13 @@ public abstract class DownloadThreadsTask extends AsyncTask<Void, Long, Boolean>
 	
 	public DownloadThreadsTask(Context context, HttpClient client, ObjectMapper om,
 			String sortByUrl, String sortByUrlExtra,
-			String subreddit, String query, String sort) { 
+			boolean isSearch, String subreddit, String query, String sort, boolean subredditOnly) { 
 		this(context, client, om, sortByUrl, sortByUrlExtra, subreddit, null, null, Constants.DEFAULT_THREAD_DOWNLOAD_LIMIT);
+		mIsSearch = isSearch;
+		mSubreddit = subreddit;
 		mSearchQuery = query;
 		mSortSearch = sort;
+		mLimitSearch = subredditOnly;
 	}
 
 	public DownloadThreadsTask(Context context, HttpClient client, ObjectMapper om,
@@ -114,18 +118,32 @@ public abstract class DownloadThreadsTask extends AsyncTask<Void, Long, Boolean>
     	try {
     		String url;
     		StringBuilder sb;
+    		//if isSearch is flagged, then build a search URL
+    		if(mIsSearch){
+	    		sb = new StringBuilder(Constants.REDDIT_BASE_URL); 
+	    		if(!(mSubreddit.equals(Constants.FRONTPAGE_STRING))){ //searching within a subreddit
+	    			sb.append("/r/" + mSubreddit);
+	    		}
+	    		sb.append("/search/.json?q="+URLEncoder.encode(mSearchQuery,"utf8"));
+	    		if(mLimitSearch){
+	    			sb.append("&" + Constants.RESTRICT_SUBREDDIT_URL);
+	    		}
+	    		sb.append("&sort=" + mSortSearch);
+	    		Log.i("URL",sb.toString());
+    		}
+    		
     		// If refreshing or something, use the previously used URL to get the threads.
     		// Picking a new subreddit will erase the saved URL, getting rid of after= and before=.
     		// subreddit.length != 0 means you are going Next or Prev, which creates new URL.
-			if (Constants.FRONTPAGE_STRING.equals(mSubreddit)) {
+    		else if (Constants.FRONTPAGE_STRING.equals(mSubreddit)) {
     			sb = new StringBuilder(Constants.REDDIT_BASE_URL + "/").append(mSortByUrl)
     				.append(".json?").append(mSortByUrlExtra).append("&");
     		} 
 			//prepare a search query
-			else if(Constants.REDDIT_SEARCH_STRING.equals(mSubreddit)){
+			/*else if(Constants.REDDIT_SEARCH_STRING.equals(mSubreddit)){
 				sb = new StringBuilder(Constants.REDDIT_BASE_URL + "/search/").append(".json?q=")
 					.append(URLEncoder.encode(mSearchQuery, "utf8")).append("&sort=" + mSortSearch);
-			}
+			}*/
 			else {
     			sb = new StringBuilder(Constants.REDDIT_BASE_URL + "/r/")
         			.append(mSubreddit.toString().trim())

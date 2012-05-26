@@ -151,6 +151,8 @@ public class Constants {
     public static final String REDDIT_SEARCH_STRING = "search";
     public static final String DEFAULT_REDDIT_SEARCH = "bacon";
     public static final String DEFAULT_SEARCH_SORT = "relevant";
+    public static final String LIMIT_SEARCH_STRING = "Limit search to /r/";
+    public static final String RESTRICT_SUBREDDIT_URL = "restrict_sr=on";
     
     public static final String HAVE_MAIL_TICKER = "reddit mail";
     public static final String HAVE_MAIL_TITLE = "diode";

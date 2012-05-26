@@ -147,6 +147,7 @@ public final class ThreadsListActivity extends ListActivity {
     private boolean mCanChord = false;
     
     //search query, so it can be displayed in the progress bar
+    private boolean mIsSearch;
     private String mSearchQuery = null;
     
     
@@ -228,15 +229,6 @@ public final class ThreadsListActivity extends ListActivity {
     @Override
     protected void onResume() {
     	super.onResume();
-    	
-        // SOPA blackout: Jan 18, 2012 from 8am-8pm EST (1300-0100 UTC)
-    	long timeMillis = System.currentTimeMillis();
-        if (timeMillis >= 1326891600000L && timeMillis <= 1326934800000L) {
-        	Toast.makeText(this, "Let's Protest SOPA", Toast.LENGTH_LONG).show();
-        	Common.launchBrowser(this, "http://www.reddit.com", null, false, true, false, false);
-        	finish();
-        	return;
-        }
         
 		int previousTheme = mSettings.getTheme();
 
@@ -302,9 +294,11 @@ public final class ThreadsListActivity extends ListActivity {
     		if(resultCode==Activity.RESULT_OK){
     			//changed it so each piece of data is passed separately as extras in the intent
     			//rather than having to use regex to split apart a string
-    			//could probably do away with the "subreddit" field since we're
-    			//using a modified constructor anyways
-				new MyDownloadThreadsTask(intent.getExtras().getString("searchurl"), intent.getExtras().getString("query"),intent.getExtras().getString("sort")).execute();
+    			String query = intent.getStringExtra("query");
+    			String sort = intent.getStringExtra("sort");
+    			mIsSearch = intent.getBooleanExtra("search", true);
+    			boolean limit = intent.getBooleanExtra("limit",false);
+				new MyDownloadThreadsTask(mIsSearch,mSubreddit,query,sort,limit).execute();
     		}
     		break;
     	default:
@@ -337,8 +331,10 @@ public final class ThreadsListActivity extends ListActivity {
         }
         //if the search button is pressed
         else if(keyCode == KeyEvent.KEYCODE_SEARCH){
+        	Intent i = new Intent(this,RedditSearchActivity.class);
+        	i.putExtra("subreddit", mSubreddit);
         	//start activity
-        	startActivityForResult(new Intent(this, RedditSearchActivity.class), Constants.ACTIVITY_SEARCH_REDDIT);
+        	startActivityForResult(i, Constants.ACTIVITY_SEARCH_REDDIT);
         	return true;
         	
         }
@@ -728,13 +724,13 @@ public final class ThreadsListActivity extends ListActivity {
 					subreddit);
 		}
     	
-    	public MyDownloadThreadsTask(String subreddit, String query, String sort) {
+    	public MyDownloadThreadsTask(boolean isSearch,String subreddit, String query, String sort, boolean subredditOnly) {
 			super(getApplicationContext(),
 					ThreadsListActivity.this.mClient,
 					ThreadsListActivity.this.mObjectMapper,
 					ThreadsListActivity.this.mSortByUrl,
 					ThreadsListActivity.this.mSortByUrlExtra,
-					subreddit, query, sort);
+					isSearch,subreddit, query, sort,subredditOnly);
 		}
     	
     	public MyDownloadThreadsTask(String subreddit,
@@ -781,10 +777,10 @@ public final class ThreadsListActivity extends ListActivity {
     			getWindow().setFeatureInt(Window.FEATURE_PROGRESS, 0);
     		}
     		
-	    	if (Constants.FRONTPAGE_STRING.equals(mSubreddit))
-	    		setTitle("reddit.com: what's new online!");
-	    	else if(Constants.REDDIT_SEARCH_STRING.equals(mSubreddit))
+	    	if(mIsSearch)
 	    		setTitle(getResources().getString(R.string.search_title_prefix) + mSearchQuery);
+	    	else if (Constants.FRONTPAGE_STRING.equals(mSubreddit))
+	    		setTitle("reddit.com: what's new online!");
 	    	else
 	    		setTitle("/r/" + mSubreddit.trim());
     	}

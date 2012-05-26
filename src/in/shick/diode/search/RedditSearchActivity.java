@@ -15,6 +15,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 
@@ -23,7 +24,9 @@ public class RedditSearchActivity extends Activity implements OnClickListener, O
 	private Button btn;
 	private EditText searchText;
 	private Spinner sortBy;
+	private CheckBox limitSearch;
 	private String mSort = Constants.DEFAULT_SEARCH_SORT; //default to show most relevant results first
+	private String mSubreddit;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -44,17 +47,35 @@ public class RedditSearchActivity extends Activity implements OnClickListener, O
 		
 		searchText = (EditText) findViewById(R.id.searchText);
 		searchText.setOnKeyListener(this);
+		
+		//use the subreddit passed via the intent to determine whether to display the checkbox
+		
+		limitSearch = (CheckBox)findViewById(R.id.limitSearch);
+		Intent i = getIntent();
+		mSubreddit = i.getStringExtra("subreddit");
+		if(mSubreddit.equals(Constants.FRONTPAGE_STRING)){
+			limitSearch.setVisibility(View.GONE);
+		}
+		else{
+			limitSearch.setText(Constants.LIMIT_SEARCH_STRING + mSubreddit);
+			limitSearch.setVisibility(View.VISIBLE);
+		}
+		
+		
 	}
 	
 	private void activityDone()
 	{
 		Intent intent = new Intent();
-		intent.putExtra("searchurl", "search");
+		//intent.putExtra("search", true);
 		String query = searchText.getText().toString();
 		if(query == null){
 			query = Constants.DEFAULT_REDDIT_SEARCH;
 		}
-		intent.putExtra("query", searchText.getText().toString());
+		if(limitSearch.isChecked()){
+			intent.putExtra("limit", true);
+		}
+		intent.putExtra("query", query);
 		intent.putExtra("sort", mSort);
 		setResult(RESULT_OK, intent);
 		finish();
