@@ -20,8 +20,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="in.shick.diode"
       
-      android:versionCode="5"
-      android:versionName="1.0.4"
+      android:versionCode="6"
+      android:versionName="1.0.4.1"
       android:installLocation="auto"
       >
 
