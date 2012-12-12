@@ -283,7 +283,11 @@ public final class PickSubredditActivity extends ListActivity {
 	            	entity = response.getEntity();
 	            	BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
 	                
-	                String line = in.readLine();
+                    String line = "";
+                    String subline = null;
+                    while((subline = in.readLine()) != null) {
+                        line += subline;
+                    }
 	                in.close();
 	                entity.consumeContent();
 	                
