@@ -11,6 +11,7 @@ public class UserInfo implements Serializable, Parcelable {
 	
 	private Boolean has_mail;
 	private String name;
+	private boolean is_friend;
 	private long created;
 	private String modhash;
 	private long created_utc;
@@ -45,9 +46,10 @@ public class UserInfo implements Serializable, Parcelable {
 		dest.writeString(id);
 		dest.writeValue(has_mod_mail);
 		
-		boolean booleans[] = new boolean[2];
+		boolean booleans[] = new boolean[3];
 		booleans[0] = is_gold;
 		booleans[1] = is_mod;
+		booleans[2] = is_friend;
 		dest.writeBooleanArray(booleans);
 	}
 	
@@ -74,8 +76,9 @@ public class UserInfo implements Serializable, Parcelable {
 		
 		boolean booleans[] = new boolean[2];
 		in.readBooleanArray(booleans);
-		is_gold = booleans[0];
-		is_mod  = booleans[1];
+		is_gold   = booleans[0];
+		is_mod    = booleans[1];
+		is_friend = booleans[2];
 	}
 
 	public boolean isHas_mail() {
@@ -164,6 +167,14 @@ public class UserInfo implements Serializable, Parcelable {
 
 	public void setHas_mod_mail(boolean has_mod_mail) {
 		this.has_mod_mail = has_mod_mail;
+	}
+
+	public void setIs_friend(boolean input) {
+		this.is_friend = input;
+	}
+
+	public boolean isIs_friend() {
+		return is_friend;
 	}
 	
 }
