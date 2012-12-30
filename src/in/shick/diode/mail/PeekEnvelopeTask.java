@@ -95,8 +95,9 @@ public class PeekEnvelopeTask extends MeTask {
 		resetAlarm();
 		
 		// null means error. Don't do anything.
-		if (count == null)
+		if (count == null) {
 			return;
+		}
 		if (count > 0) {
 			Common.newMailNotification(mContext, mMailNotificationStyle, count);
 		} else {
