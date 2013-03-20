@@ -73,7 +73,7 @@ public final class PickSubredditActivity extends ListActivity {
 	private static final String TAG = "PickSubredditActivity";
 	
 	// Group 1: inner
-    private final Pattern MY_SUBREDDITS_OUTER = Pattern.compile("your front page reddits.*?<ul>(.*?)</ul>", Pattern.CASE_INSENSITIVE);
+    private final Pattern MY_SUBREDDITS_OUTER = Pattern.compile("YOUR FRONT PAGE SUBREDDITS.*?<ul>(.*?)</ul>", Pattern.CASE_INSENSITIVE);
     // Group 3: subreddit name. Repeat the matcher.find() until it fails.
     private final Pattern MY_SUBREDDITS_INNER = Pattern.compile("<a(.*?)/r/(.*?)>(.+?)</a>");
 
