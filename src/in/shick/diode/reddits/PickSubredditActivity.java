@@ -89,6 +89,7 @@ public final class PickSubredditActivity extends ListActivity {
     private final Object mCurrentTaskLock = new Object();
 	
     public static final String[] DEFAULT_SUBREDDITS = {
+        "diode",
     	"pics",
     	"funny",
     	"politics",
