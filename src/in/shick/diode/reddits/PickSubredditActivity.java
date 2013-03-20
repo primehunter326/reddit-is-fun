@@ -22,6 +22,7 @@ package in.shick.diode.reddits;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +59,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import in.shick.diode.R;
 import in.shick.diode.common.CacheInfo;
@@ -273,61 +277,31 @@ public final class PickSubredditActivity extends ListActivity {
             	
             	if (reddits == null) {
             		reddits = new ArrayList<String>();
-            		
-	            	HttpGet request = new HttpGet(Constants.REDDIT_BASE_URL + "/reddits");
-	            	// Set timeout to 15 seconds
-	                HttpParams params = request.getParams();
-	    	        HttpConnectionParams.setConnectionTimeout(params, 15000);
-	    	        HttpConnectionParams.setSoTimeout(params, 15000);
-	    	        
-	    	        HttpResponse response = mClient.execute(request);
-	            	entity = response.getEntity();
-	            	BufferedReader in = new BufferedReader(new InputStreamReader(entity.getContent()));
-	                
-                    String line = "";
-                    String subline = null;
-                    while((subline = in.readLine()) != null) {
-                        line += subline;
-                    }
-	                in.close();
-	                entity.consumeContent();
-	                
-	                Matcher outer = MY_SUBREDDITS_OUTER.matcher(line);
-	                if (outer.find()) {
-	                	Matcher inner = MY_SUBREDDITS_INNER.matcher(outer.group(1));
-	                	while (inner.find()) {
-	                		reddits.add(inner.group(3));
-	                	}
-	                } else {
-	                	return null;
-	                }
-	                
-	                if (Constants.LOGGING) Log.d(TAG, "new subreddit list size: " + reddits.size());
-	                
-	                if (Constants.USE_SUBREDDITS_CACHE) {
-	                	try {
-	                		CacheInfo.setCachedSubredditList(getApplicationContext(), reddits);
-	                		if (Constants.LOGGING) Log.d(TAG, "wrote subreddit list to cache:" + reddits);
-	                	} catch (IOException e) {
-	                		if (Constants.LOGGING) Log.e(TAG, "error on setCachedSubredditList", e);
-	                	}
-	                }
-            	}
-                
-                return reddits;
-                
-            } catch (Exception e) {
-            	if (Constants.LOGGING) Log.e(TAG, "failed", e);
-                if (entity != null) {
-	                try {
-	                	entity.consumeContent();
-	                } catch (Exception e2) {
-	                	// Ignore.
-	                }
+
+                        HttpGet request = new HttpGet(Constants.REDDIT_BASE_URL + "/subreddits/mine/subscriber.json?limit=100");
+                        // Set timeout to 15 seconds
+                        HttpParams params = request.getParams();
+                        HttpConnectionParams.setConnectionTimeout(params, 15000);
+                        HttpConnectionParams.setSoTimeout(params, 15000);
+                        
+                        HttpResponse response = mClient.execute(request);
+                        entity = response.getEntity();
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode rootNode = mapper.readValue(entity.getContent(), JsonNode.class);
+                        entity.consumeContent();
+
+                        for(JsonNode ee : rootNode.get("data").get("children")) {
+                            ee = ee.get("data");
+                            reddits.add("" + ee.get("display_name").getTextValue() + " :: \"" +
+                                    ee.get("title").getTextValue() + "\"");
+                        }
                 }
+                return reddits;
+	    }
+            catch(Throwable e) {
             }
             return null;
-	    }
+        }
     	
     	@Override
     	public void onPreExecute() {
