@@ -30,11 +30,13 @@ import in.shick.diode.common.tasks.SaveTask;
 import in.shick.diode.common.tasks.VoteTask;
 import in.shick.diode.common.util.StringUtils;
 import in.shick.diode.common.util.Util;
+import in.shick.diode.filters.FilterListActivity;
 import in.shick.diode.login.LoginDialog;
 import in.shick.diode.login.LoginTask;
 import in.shick.diode.mail.InboxActivity;
 import in.shick.diode.mail.PeekEnvelopeTask;
 import in.shick.diode.reddits.PickSubredditActivity;
+import in.shick.diode.reddits.SubredditInfo;
 import in.shick.diode.reddits.SubscribeTask;
 import in.shick.diode.reddits.UnsubscribeTask;
 import in.shick.diode.search.RedditSearchActivity;
@@ -44,7 +46,6 @@ import in.shick.diode.submit.SubmitLinkActivity;
 import in.shick.diode.things.ThingInfo;
 import in.shick.diode.threads.ShowThumbnailsTask.ThumbnailLoadAction;
 import in.shick.diode.user.ProfileActivity;
-import in.shick.diode.filters.FilterListActivity;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -1094,9 +1095,11 @@ public final class ThreadsListActivity extends ListActivity {
     		menu.findItem(R.id.login_menu_id).setVisible(false);
 
     		if(!mSubreddit.equals(Constants.FRONTPAGE_STRING)){
-    			ArrayList<String> mSubredditsList = CacheInfo.getCachedSubredditList(getApplicationContext());	
+    			ArrayList<SubredditInfo> mSubredditsList = CacheInfo.getCachedSubredditList(getApplicationContext());	
+                        SubredditInfo key = new SubredditInfo();
+                        key.name = mSubreddit;
     			
-    			if(mSubredditsList != null && StringUtils.listContainsIgnoreCase(mSubredditsList, mSubreddit)){
+    			if(mSubredditsList != null && mSubredditsList.contains(key)){
 	    			menu.findItem(R.id.unsubscribe_menu_id).setVisible(true);
 	    			menu.findItem(R.id.subscribe_menu_id).setVisible(false);
 	    		}

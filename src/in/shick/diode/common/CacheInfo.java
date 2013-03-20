@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import android.content.Context;
 import android.util.Log;
 
+import in.shick.diode.reddits.SubredditInfo;
+
 public class CacheInfo implements Serializable {
 	static final long serialVersionUID = 39;
 	static final String TAG = "CacheInfo";
@@ -45,7 +47,7 @@ public class CacheInfo implements Serializable {
 	// the ids for the cached JSON objects
 	public String subredditUrl = null;
 	public String threadUrl = null;
-	public ArrayList<String> subredditList = null;
+	public ArrayList<SubredditInfo> subredditList = null;
 
 	
 	
@@ -143,7 +145,7 @@ public class CacheInfo implements Serializable {
     	}
     }
     
-    public static ArrayList<String> getCachedSubredditList(Context context) {
+    public static ArrayList<SubredditInfo> getCachedSubredditList(Context context) {
     	try {
     		return getCacheInfo(context).subredditList;
     	} catch (Exception e) {
@@ -293,7 +295,7 @@ public class CacheInfo implements Serializable {
 		}
     }
     
-    public static void setCachedSubredditList(Context context, ArrayList<String> subredditList) throws IOException {
+    public static void setCachedSubredditList(Context context, ArrayList<SubredditInfo> subredditList) throws IOException {
     	if (!Constants.USE_SUBREDDITS_CACHE)
     		return;
     	

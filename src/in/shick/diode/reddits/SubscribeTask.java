@@ -93,8 +93,10 @@ public class SubscribeTask extends AsyncTask<Void, Void, Boolean> {
         	}
         	
         	
-			ArrayList<String> mSubredditsList = CacheInfo.getCachedSubredditList(mContext);	
-			mSubredditsList.add(mSubreddit.toLowerCase());
+			ArrayList<SubredditInfo> mSubredditsList = CacheInfo.getCachedSubredditList(mContext);	
+                        SubredditInfo newSubreddit = new SubredditInfo();
+                        newSubreddit.name = mSubreddit.toLowerCase();
+			mSubredditsList.add(newSubreddit);
 
 			Collections.sort(mSubredditsList);
 			

@@ -90,7 +90,7 @@ public class UnsubscribeTask extends AsyncTask<Void, Void, Boolean> {
         		throw new HttpException(mUrl);
         	}
         	
-			ArrayList<String> mSubredditsList = CacheInfo.getCachedSubredditList(mContext);	
+			ArrayList<SubredditInfo> mSubredditsList = CacheInfo.getCachedSubredditList(mContext);	
 			mSubredditsList.remove(mSubreddit.toLowerCase());
 			Collections.sort(mSubredditsList);
 			CacheInfo.setCachedSubredditList(mContext, mSubredditsList);

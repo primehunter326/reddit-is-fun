@@ -56,6 +56,13 @@
     
     <string name="loading_splash_text">Loading…</string>
     
+    <string name="subscriber_count_format" formatted="false">%s subs.</string>
+    <string name="second_age_format" formatted="false">%d second</string>
+    <string name="minute_age_format" formatted="false">%d minute</string>
+    <string name="hour_age_format" formatted="false">%d hour</string>
+    <string name="day_age_format" formatted="false">%d day</string>
+    <string name="month_age_format" formatted="false">%d month</string>
+    <string name="year_age_format" formatted="false">%d year</string>
     <string name="pick_subreddit_label">Subreddit name:</string>
     <string name="pick_subreddit_button">Go</string>
     <string name="frontpage">reddit front page</string>

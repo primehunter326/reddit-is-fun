@@ -23,8 +23,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -85,7 +88,7 @@ public final class PickSubredditActivity extends ListActivity {
 	private HttpClient mClient = RedditIsFunHttpClientFactory.getGzipHttpClient();
 	
 	private PickSubredditAdapter mSubredditsAdapter;
-	private ArrayList<String> mSubredditsList;
+	private ArrayList<SubredditInfo> mSubredditsList;
 	private static final Object ADAPTER_LOCK = new Object();
 	private EditText mEt;
 	
@@ -185,7 +188,7 @@ public final class PickSubredditActivity extends ListActivity {
     
     @SuppressWarnings("unchecked")
 	private void restoreLastNonConfigurationInstance() {
-    	mSubredditsList = (ArrayList<String>) getLastNonConfigurationInstance();
+    	mSubredditsList = (ArrayList<SubredditInfo>) getLastNonConfigurationInstance();
     }
 
     void resetUI(PickSubredditAdapter adapter) {
@@ -195,7 +198,7 @@ public final class PickSubredditActivity extends ListActivity {
     	synchronized (ADAPTER_LOCK) {
 	    	if (adapter == null) {
 	            // Reset the list to be empty.
-		    	mSubredditsList = new ArrayList<String>();
+		    	mSubredditsList = new ArrayList<SubredditInfo>();
 		    	mSubredditsAdapter = new PickSubredditAdapter(this, mSubredditsList);
 	    	} else {
 	    		mSubredditsAdapter = adapter;
@@ -235,13 +238,13 @@ public final class PickSubredditActivity extends ListActivity {
         
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
-        String item = mSubredditsAdapter.getItem(position);
-        returnSubreddit(item);
+        SubredditInfo item = mSubredditsAdapter.getItem(position);
+        returnSubreddit(item.name);
     }
     
     private void returnSubreddit(String subreddit) {
        	Intent intent = new Intent();
-       	intent.setData(Util.createSubredditUri(subreddit));
+       	intent.setData(Util.createSubredditUri(subreddit.toLowerCase()));
        	setResult(RESULT_OK, intent);
        	finish();	
     }
@@ -266,17 +269,17 @@ public final class PickSubredditActivity extends ListActivity {
     	getWindow().setFeatureInt(Window.FEATURE_PROGRESS, Window.PROGRESS_END);
     }
     
-    class DownloadRedditsTask extends AsyncTask<Void, Void, ArrayList<String>> {
+    class DownloadRedditsTask extends AsyncTask<Void, Void, ArrayList<SubredditInfo>> {
     	@Override
-    	public ArrayList<String> doInBackground(Void... voidz) {
-    		ArrayList<String> reddits = null;
+    	public ArrayList<SubredditInfo> doInBackground(Void... voidz) {
+    		ArrayList<SubredditInfo> reddits = null;
     		HttpEntity entity = null;
             try {
             	
             	reddits = cacheSubredditsList(reddits);
             	
             	if (reddits == null) {
-            		reddits = new ArrayList<String>();
+            		reddits = new ArrayList<SubredditInfo>();
 
                         HttpGet request = new HttpGet(Constants.REDDIT_BASE_URL + "/subreddits/mine/subscriber.json?limit=100");
                         // Set timeout to 15 seconds
@@ -292,10 +295,17 @@ public final class PickSubredditActivity extends ListActivity {
 
                         for(JsonNode ee : rootNode.get("data").get("children")) {
                             ee = ee.get("data");
-                            reddits.add("" + ee.get("display_name").getTextValue() + " :: \"" +
-                                    ee.get("title").getTextValue() + "\"");
+                            SubredditInfo sr = new SubredditInfo();
+                            sr.name = ee.get("display_name").getTextValue();
+                            sr.description = ee.get("title").getTextValue();
+                            sr.nsfw = ee.get("over18").getBooleanValue();
+                            sr.subscribers = ee.get("subscribers").getIntValue();
+                            sr.url = new URL(Constants.REDDIT_BASE_URL + ee.get("url").getTextValue());
+                            sr.created = new Date((long) ee.get("created").getIntValue() * 1000);
+                            reddits.add(sr);
                         }
                 }
+                Collections.sort(reddits);
                 return reddits;
 	    }
             catch(Throwable e) {
@@ -317,7 +327,7 @@ public final class PickSubredditActivity extends ListActivity {
     	}
     	
     	@Override
-    	public void onPostExecute(ArrayList<String> reddits) {
+    	public void onPostExecute(ArrayList<SubredditInfo> reddits) {
     		synchronized (mCurrentTaskLock) {
     			mCurrentTask = null;
     		}
@@ -325,12 +335,16 @@ public final class PickSubredditActivity extends ListActivity {
 			
     		if (reddits == null || reddits.size() == 0) {
     			// Need to make a copy because Arrays.asList returns List backed by original array
-    	        mSubredditsList = new ArrayList<String>();
-    	        mSubredditsList.addAll(Arrays.asList(DEFAULT_SUBREDDITS));
+                        mSubredditsList = new ArrayList<SubredditInfo>();
+                        for(String ee : DEFAULT_SUBREDDITS) {
+                            SubredditInfo info = new SubredditInfo();
+                            info.name = ee;
+                            mSubredditsList.add(info);
+                        }
     		} else {
     			mSubredditsList = reddits;
     		}
-    		addFakeSubredditsUnlessSuppressed();
+    		//addFakeSubredditsUnlessSuppressed();
 	        resetUI(new PickSubredditAdapter(PickSubredditActivity.this, mSubredditsList));
     	}
     }
@@ -350,20 +364,26 @@ public final class PickSubredditActivity extends ListActivity {
         }
 	    if (addFakeSubreddits)
 	    {
-	    	mSubredditsList.addAll(0, Arrays.asList(FAKE_SUBREDDITS));    		
+                for(String ee : DEFAULT_SUBREDDITS) {
+                    SubredditInfo info = new SubredditInfo();
+                    info.name = ee;
+                    mSubredditsList.add(info);
+                }
 	    }
     }
 
-    private final class PickSubredditAdapter extends ArrayAdapter<String> {
+    private final class PickSubredditAdapter extends ArrayAdapter<SubredditInfo> {
     	private LayoutInflater mInflater;
         private boolean mLoading = true;
         private int mFrequentSeparatorPos = ListView.INVALID_POSITION;
+        private NumberFormat mSubscriberFormat;
 
         
-        public PickSubredditAdapter(Context context, List<String> objects) {
+        public PickSubredditAdapter(Context context, List<SubredditInfo> objects) {
             super(context, 0, objects);
             
             mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            mSubscriberFormat = NumberFormat.getInstance();
         }
 
         @Override
@@ -392,13 +412,31 @@ public final class PickSubredditActivity extends ListActivity {
 
             // Here view may be passed in for re-use, or we make a new one.
             if (convertView == null) {
-                view = mInflater.inflate(android.R.layout.simple_list_item_1, null);
+                view = mInflater.inflate(R.layout.subreddit_list_entry, null);
             } else {
                 view = convertView;
             }
+
+            SubredditInfo subject = mSubredditsAdapter.getItem(position);
                         
-            TextView text = (TextView) view.findViewById(android.R.id.text1);
-            text.setText(mSubredditsAdapter.getItem(position));
+            TextView text = (TextView) view.findViewById(R.id.name);
+            text.setText(subject.name);
+
+            if(subject.created != null)
+            {
+                text = (TextView) view.findViewById(R.id.age);
+                text.setText(subject.getAgeString(PickSubredditActivity.this));
+            }
+
+            if(subject.subscribers > 0)
+            {
+                text = (TextView) view.findViewById(R.id.subscribers);
+                text.setText(String.format(getString(R.string.subscriber_count_format),
+                            mSubscriberFormat.format(subject.subscribers)));
+            }
+
+            text = (TextView) view.findViewById(R.id.description);
+            text.setText(subject.description);
             
             return view;
         }
@@ -453,7 +491,7 @@ public final class PickSubredditActivity extends ListActivity {
         }
     }
     
-    protected ArrayList<String> cacheSubredditsList(ArrayList<String> reddits){
+    protected ArrayList<SubredditInfo> cacheSubredditsList(ArrayList<SubredditInfo> reddits){
     	if (Constants.USE_SUBREDDITS_CACHE) {
     		if (CacheInfo.checkFreshSubredditListCache(getApplicationContext())) {
     			reddits = CacheInfo.getCachedSubredditList(getApplicationContext());
