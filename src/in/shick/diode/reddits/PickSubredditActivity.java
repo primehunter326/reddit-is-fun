@@ -435,6 +435,13 @@ public final class PickSubredditActivity extends ListActivity {
                             mSubscriberFormat.format(subject.subscribers)));
             }
 
+            text = (TextView) view.findViewById(R.id.nsfw);
+            if(subject.nsfw == true) {
+            	text.setVisibility(View.VISIBLE);
+            } else {
+            	text.setVisibility(View.GONE);
+            }
+
             text = (TextView) view.findViewById(R.id.description);
             text.setText(subject.description);
             

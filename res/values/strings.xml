@@ -285,5 +285,6 @@
 
     <string name="pref_filters_category">Link filtering</string>
     <string name="pref_title_filter">Edit title filters</string>
+    <string name="nsfw">nsfw</string>
     
 </resources>
