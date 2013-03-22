@@ -306,6 +306,10 @@ public final class PickSubredditActivity extends ListActivity {
                         }
                 }
                 Collections.sort(reddits);
+                // insert the frontpage at the head of the list
+                SubredditInfo fp = new SubredditInfo();
+                fp.name = Constants.FRONTPAGE_STRING;
+                reddits.add(0, fp);
                 return reddits;
 	    }
             catch(Throwable e) {
@@ -422,17 +426,25 @@ public final class PickSubredditActivity extends ListActivity {
             TextView text = (TextView) view.findViewById(R.id.name);
             text.setText(subject.name);
 
+            text = (TextView) view.findViewById(R.id.age);
             if(subject.created != null)
             {
-                text = (TextView) view.findViewById(R.id.age);
                 text.setText(subject.getAgeString(PickSubredditActivity.this));
             }
+            else
+            {
+                text.setText(null);
+            }
 
+            text = (TextView) view.findViewById(R.id.subscribers);
             if(subject.subscribers > 0)
             {
-                text = (TextView) view.findViewById(R.id.subscribers);
                 text.setText(String.format(getString(R.string.subscriber_count_format),
                             mSubscriberFormat.format(subject.subscribers)));
+            }
+            else
+            {
+                text.setText(null);
             }
 
             text = (TextView) view.findViewById(R.id.nsfw);
