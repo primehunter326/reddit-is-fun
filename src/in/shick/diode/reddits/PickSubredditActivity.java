@@ -50,6 +50,8 @@ import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -84,6 +86,7 @@ public final class PickSubredditActivity extends ListActivity {
     // Group 3: subreddit name. Repeat the matcher.find() until it fails.
     private final Pattern MY_SUBREDDITS_INNER = Pattern.compile("<a(.*?)/r/(.*?)>(.+?)</a>");
 
+	private boolean refresh = true;
 	private RedditSettings mSettings = new RedditSettings();
 	private HttpClient mClient = RedditIsFunHttpClientFactory.getGzipHttpClient();
 	
@@ -139,6 +142,7 @@ public final class PickSubredditActivity extends ListActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	mSubredditsList = new ArrayList<SubredditInfo>();
         
 		CookieSyncManager.createInstance(getApplicationContext());
 		
@@ -151,9 +155,7 @@ public final class PickSubredditActivity extends ListActivity {
     	setContentView(R.layout.pick_subreddit_view);
         registerForContextMenu(getListView());
 
-        resetUI(null);
-        
-    	mSubredditsList = cacheSubredditsList(mSubredditsList);
+        mSubredditsList = getCachedSubredditsList();
     	
         if (CollectionUtils.isEmpty(mSubredditsList))
             restoreLastNonConfigurationInstance();
@@ -162,7 +164,6 @@ public final class PickSubredditActivity extends ListActivity {
         	new DownloadRedditsTask().execute();
         }
         else {
-	        addFakeSubredditsUnlessSuppressed();
 	        resetUI(new PickSubredditAdapter(this, mSubredditsList));
         }
     }
@@ -238,6 +239,7 @@ public final class PickSubredditActivity extends ListActivity {
         
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
+    	super.onListItemClick(l, v, position, id);
         SubredditInfo item = mSubredditsAdapter.getItem(position);
         returnSubreddit(item.name);
     }
@@ -265,21 +267,19 @@ public final class PickSubredditActivity extends ListActivity {
     }
     
     private void disableLoadingScreen() {
-    	resetUI(mSubredditsAdapter);
+		findViewById(R.id.loading_dark).setVisibility(View.GONE);
+		findViewById(R.id.loading_light).setVisibility(View.GONE);
     	getWindow().setFeatureInt(Window.FEATURE_PROGRESS, Window.PROGRESS_END);
     }
     
     class DownloadRedditsTask extends AsyncTask<Void, Void, ArrayList<SubredditInfo>> {
     	@Override
     	public ArrayList<SubredditInfo> doInBackground(Void... voidz) {
-    		ArrayList<SubredditInfo> reddits = null;
     		HttpEntity entity = null;
             try {
             	
-            	reddits = cacheSubredditsList(reddits);
-            	
-            	if (reddits == null) {
-            		reddits = new ArrayList<SubredditInfo>();
+				ArrayList<SubredditInfo> reddits = null;
+				if(refresh) {
 
                         HttpGet request = new HttpGet(Constants.REDDIT_BASE_URL + "/subreddits/mine/subscriber.json?limit=100");
                         // Set timeout to 15 seconds
@@ -293,6 +293,7 @@ public final class PickSubredditActivity extends ListActivity {
                         JsonNode rootNode = mapper.readValue(entity.getContent(), JsonNode.class);
                         entity.consumeContent();
 
+                        reddits = new ArrayList<SubredditInfo>();
                         for(JsonNode ee : rootNode.get("data").get("children")) {
                             ee = ee.get("data");
                             SubredditInfo sr = new SubredditInfo();
@@ -304,8 +305,12 @@ public final class PickSubredditActivity extends ListActivity {
                             sr.created = new Date((long) ee.get("created").getIntValue() * 1000);
                             reddits.add(sr);
                         }
+    					Collections.sort(reddits);
+    					CacheInfo.setCachedSubredditList(getApplicationContext(), reddits);
+    					refresh = false;
+    				} else {
+    					reddits = getCachedSubredditsList();
                 }
-                Collections.sort(reddits);
                 return reddits;
 	    }
             catch(Throwable e) {
@@ -315,6 +320,7 @@ public final class PickSubredditActivity extends ListActivity {
     	
     	@Override
     	public void onPreExecute() {
+    		super.onPreExecute();
     		synchronized (mCurrentTaskLock) {
 	    		if (mCurrentTask != null) {
 	    			this.cancel(true);
@@ -322,7 +328,6 @@ public final class PickSubredditActivity extends ListActivity {
 	    		}
     			mCurrentTask = this;
     		}
-    		resetUI(null);
     		enableLoadingScreen();
     	}
     	
@@ -346,32 +351,10 @@ public final class PickSubredditActivity extends ListActivity {
     		}
     		//addFakeSubredditsUnlessSuppressed();
 	        resetUI(new PickSubredditAdapter(PickSubredditActivity.this, mSubredditsList));
+	        super.onPostExecute(reddits);
     	}
     }
     
-    private void addFakeSubredditsUnlessSuppressed() {
-	    // Insert special reddits (front page, all) into subreddits list, unless suppressed by Intent extras
-		Bundle extras = getIntent().getExtras();
-		boolean addFakeSubreddits = false;
-	    if (extras != null) {
-        	boolean shouldHideFakeSubreddits = extras.getBoolean(Constants.EXTRA_HIDE_FAKE_SUBREDDITS_STRING, false);
-        	if (!shouldHideFakeSubreddits)
-        	{
-        		addFakeSubreddits = true;
-        	}
-        } else {    		
-        	addFakeSubreddits = true;    			    		
-        }
-	    if (addFakeSubreddits)
-	    {
-                for(String ee : DEFAULT_SUBREDDITS) {
-                    SubredditInfo info = new SubredditInfo();
-                    info.name = ee;
-                    mSubredditsList.add(info);
-                }
-	    }
-    }
-
     private final class PickSubredditAdapter extends ArrayAdapter<SubredditInfo> {
     	private LayoutInflater mInflater;
         private boolean mLoading = true;
@@ -473,8 +456,9 @@ public final class PickSubredditActivity extends ListActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
     	switch (item.getItemId()) {
 
-    	case android.R.id.home:
-    		Common.goHome(this);
+		case R.id.refresh_subreddit_list:
+			refresh = true;
+			new DownloadRedditsTask().execute();
     		break;
 
     	default:
@@ -498,7 +482,20 @@ public final class PickSubredditActivity extends ListActivity {
         }
     }
     
-    protected ArrayList<SubredditInfo> cacheSubredditsList(ArrayList<SubredditInfo> reddits){
+    /**
+     * Populates the menu.
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.subreddit_list, menu);
+        return true;
+    }
+
+	protected ArrayList<SubredditInfo> getCachedSubredditsList(){
+		ArrayList<SubredditInfo> reddits = null;
     	if (Constants.USE_SUBREDDITS_CACHE) {
     		if (CacheInfo.checkFreshSubredditListCache(getApplicationContext())) {
     			reddits = CacheInfo.getCachedSubredditList(getApplicationContext());
