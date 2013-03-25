@@ -52,6 +52,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.telephony.PhoneNumberUtils;
+import android.text.ClipboardManager;
 import android.text.Html;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -1363,6 +1364,7 @@ public class CommentsListActivity extends ListActivity
     	
     	if (rowId == 0) {
     		menu.add(0, Constants.SHARE_CONTEXT_ITEM, Menu.NONE, "Share");
+    		menu.add(0, Constants.COPY_CONTEXT_ITEM, Menu.NONE, R.string.copy);
 
     		if(getOpThingInfo().isSaved()){
     			menu.add(0, Constants.UNSAVE_CONTEXT_ITEM, Menu.NONE, "Unsave");
@@ -1473,6 +1475,18 @@ public class CommentsListActivity extends ListActivity
     	case Constants.DIALOG_REPORT:
 			mReportTargetName = mCommentsAdapter.getItem(rowId).getName();
     		showDialog(Constants.DIALOG_REPORT);
+    		return true;
+    	case Constants.COPY_CONTEXT_ITEM:
+    		String url = getOpThingInfo().getUrl();
+    		int sdk = android.os.Build.VERSION.SDK_INT;
+    		if(sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
+    		    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+    		    clipboard.setText(url);
+    		} else {
+    		    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE); 
+    		    android.content.ClipData clip = android.content.ClipData.newPlainText(url,url);
+    		    clipboard.setPrimaryClip(clip);
+    		}
     		return true;
     		
 		default:
