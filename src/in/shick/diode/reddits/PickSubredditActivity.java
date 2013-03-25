@@ -455,7 +455,9 @@ public final class PickSubredditActivity extends ListActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	switch (item.getItemId()) {
-
+    	case android.R.id.home:
+    		Common.goHome(this);
+    		break;
 		case R.id.refresh_subreddit_list:
 			refresh = true;
 			new DownloadRedditsTask().execute();
