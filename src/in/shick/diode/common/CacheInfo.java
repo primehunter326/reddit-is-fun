@@ -82,19 +82,19 @@ public class CacheInfo implements Serializable {
 	public static boolean checkFreshSubredditCache(Context context) {
     	long time = System.currentTimeMillis();
     	long subredditTime = getCachedSubredditTime(context);
-		return time - subredditTime <= Constants.DEFAULT_FRESH_DURATION;
+		return Math.abs(time - subredditTime) <= Constants.DEFAULT_FRESH_DURATION;
 	}
     
     public static boolean checkFreshThreadCache(Context context) {
     	long time = System.currentTimeMillis();
     	long threadTime = getCachedThreadTime(context);
-		return time - threadTime <= Constants.DEFAULT_FRESH_DURATION;
+		return Math.abs(time - threadTime) <= Constants.DEFAULT_FRESH_DURATION;
     }
     
     public static boolean checkFreshSubredditListCache(Context context) {
     	long time = System.currentTimeMillis();
     	long subredditListTime = getCachedSubredditListTime(context);
-    	return time - subredditListTime <= Constants.DEFAULT_FRESH_SUBREDDIT_LIST_DURATION;
+    	return Math.abs(time - subredditListTime) <= Constants.DEFAULT_FRESH_SUBREDDIT_LIST_DURATION;
     }
     
     static CacheInfo getCacheInfo(Context context) throws IOException, ClassNotFoundException {
