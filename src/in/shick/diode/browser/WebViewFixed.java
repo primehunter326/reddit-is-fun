@@ -5,6 +5,8 @@ import in.shick.diode.common.Constants;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.webkit.WebSettings;
+import android.webkit.WebSettings.RenderPriority;
 import android.webkit.WebView;
 
 /**
@@ -19,14 +21,23 @@ public class WebViewFixed extends WebView {
 	
 	public WebViewFixed(Context context) {
 		super(context);
+        // Performance tweak: http://stackoverflow.com/questions/7422427/android-webview-slow
+        super.getSettings().setRenderPriority(RenderPriority.HIGH);
+        super.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 	}
 
 	public WebViewFixed(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+        // Performance tweak: http://stackoverflow.com/questions/7422427/android-webview-slow
+        super.getSettings().setRenderPriority(RenderPriority.HIGH);
+        super.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 	}
 
 	public WebViewFixed(Context context, AttributeSet attrs) {
 		super(context, attrs);
+        // Performance tweak: http://stackoverflow.com/questions/7422427/android-webview-slow
+        super.getSettings().setRenderPriority(RenderPriority.HIGH);
+        super.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 	}
 
 	@Override
