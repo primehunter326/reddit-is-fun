@@ -20,23 +20,6 @@
 package in.shick.diode.comments;
 
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-import org.apache.http.protocol.HTTP;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -50,6 +33,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
 import android.os.Bundle;
 import android.telephony.PhoneNumberUtils;
 import android.text.Html;
@@ -79,6 +63,23 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.protocol.HTTP;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import in.shick.diode.R;
 import in.shick.diode.common.CacheInfo;
@@ -112,6 +113,13 @@ import in.shick.diode.user.ProfileActivity;
 public class CommentsListActivity extends ListActivity
 		implements View.OnCreateContextMenuListener {
 
+    public static class ObjectStates {
+        DownloadCommentsTask mDownloadCommentsTask = null;
+        ArrayList<ThingInfo> mCommentsList = null;
+    }
+
+    public ObjectStates mObjectStates = null;
+
 	private static final String TAG = "CommentsListActivity";
 	
     // Group 2: subreddit name. Group 3: thread id36. Group 4: Comment id36.
@@ -120,7 +128,6 @@ public class CommentsListActivity extends ListActivity
 
     /** Custom list adapter that fits our threads data into the list. */
     CommentsListAdapter mCommentsAdapter = null;
-    ArrayList<ThingInfo> mCommentsList = null;
     
     private final HttpClient mClient = RedditIsFunHttpClientFactory.getGzipHttpClient();
     
@@ -176,6 +183,19 @@ public class CommentsListActivity extends ListActivity
 		
 		mSettings.loadRedditPreferences(this, mClient);
 
+        restoreLastNonConfigurationInstance();
+        if(mObjectStates == null) {
+            mObjectStates = new ObjectStates();
+        }
+        else if (mObjectStates.mDownloadCommentsTask != null) {
+            if(mObjectStates.mDownloadCommentsTask.getStatus() != Status.FINISHED) {
+                mObjectStates.mDownloadCommentsTask.attach(this);
+            }
+            else {
+                mObjectStates.mDownloadCommentsTask = null;
+            }
+        }
+
         setRequestedOrientation(mSettings.getRotation());
         setTheme(mSettings.getTheme());
         requestWindowFeature(Window.FEATURE_PROGRESS);
@@ -183,7 +203,7 @@ public class CommentsListActivity extends ListActivity
     	
         setContentView(R.layout.comments_list_content);
         registerForContextMenu(getListView());
-        
+
         if (savedInstanceState != null) {
         	mReplyTargetName = savedInstanceState.getString(Constants.REPLY_TARGET_NAME_KEY);
         	mReportTargetName = savedInstanceState.getString(Constants.REPORT_TARGET_NAME_KEY);
@@ -197,13 +217,12 @@ public class CommentsListActivity extends ListActivity
         	if (mThreadTitle != null) {
         	    setTitle(mThreadTitle + " : " + mSubreddit);
         	}
-        	
-		    mCommentsList = (ArrayList<ThingInfo>) getLastNonConfigurationInstance();
-        	if (mCommentsList == null) {
+
+        	if (mObjectStates.mCommentsList == null) {
         		getNewDownloadCommentsTask().execute(Constants.DEFAULT_COMMENT_DOWNLOAD_LIMIT);
 		    } else {
 		    	// Orientation change. Use prior instance.
-			    resetUI(new CommentsListAdapter(this, mCommentsList));
+			    resetUI(new CommentsListAdapter(this, mObjectStates.mCommentsList));
 		    }
     	}
         
@@ -313,31 +332,41 @@ public class CommentsListActivity extends ListActivity
     
     @Override
     public Object onRetainNonConfigurationInstance() {
-    	return mCommentsList;
+        if(mObjectStates.mDownloadCommentsTask != null) {
+            mObjectStates.mDownloadCommentsTask.detach();
+        }
+    	return mObjectStates;
     }
-    
+
+    private void restoreLastNonConfigurationInstance() {
+        //mThreadsList = (ArrayList<ThingInfo>) getLastNonConfigurationInstance();
+        mObjectStates = (ObjectStates)getLastNonConfigurationInstance();
+    }
+
     private DownloadCommentsTask getNewDownloadCommentsTask() {
-    	return new DownloadCommentsTask(
+        if(mObjectStates.mDownloadCommentsTask == null || mObjectStates.mDownloadCommentsTask.getStatus() == Status.FINISHED)
+            mObjectStates.mDownloadCommentsTask = new DownloadCommentsTask(
 				this,
 				mSubreddit,
 				mThreadId,
 				mSettings,
 				mClient
-		);
+            );
+        return mObjectStates.mDownloadCommentsTask;
     }
-    
+
     private boolean isHiddenCommentHeadPosition(int position) {
     	return mCommentsAdapter != null && mCommentsAdapter.getItemViewType(position) == CommentsListAdapter.HIDDEN_ITEM_HEAD_VIEW_TYPE;
     }
-    
+
     private boolean isHiddenCommentDescendantPosition(int position) {
     	return mCommentsAdapter != null && mCommentsAdapter.getItem(position).isHiddenCommentDescendant();
     }
-    
+
     private boolean isLoadMoreCommentsPosition(int position) {
     	return mCommentsAdapter != null && mCommentsAdapter.getItemViewType(position) == CommentsListAdapter.MORE_ITEM_VIEW_TYPE;
     }
-    
+
     final class CommentsListAdapter extends ArrayAdapter<ThingInfo> {
     	public static final int OP_ITEM_VIEW_TYPE = 0;
     	public static final int COMMENT_ITEM_VIEW_TYPE = 1;
@@ -345,12 +374,12 @@ public class CommentsListActivity extends ListActivity
     	public static final int HIDDEN_ITEM_HEAD_VIEW_TYPE = 3;
     	// The number of view types
     	public static final int VIEW_TYPE_COUNT = 4;
-    	
+
     	public boolean mIsLoading = true;
-    	
+
     	private LayoutInflater mInflater;
         private int mFrequentSeparatorPos = ListView.INVALID_POSITION;
-        
+
         public CommentsListAdapter(Context context, List<ThingInfo> objects) {
             super(context, 0, objects);
             mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -364,7 +393,7 @@ public class CommentsListActivity extends ListActivity
                 // We don't want the separator view to be recycled.
                 return IGNORE_ITEM_VIEW_TYPE;
             }
-        	
+
             ThingInfo item = getItem(position);
             if (item.isHiddenCommentDescendant())
             	return IGNORE_ITEM_VIEW_TYPE;
@@ -372,10 +401,10 @@ public class CommentsListActivity extends ListActivity
             	return HIDDEN_ITEM_HEAD_VIEW_TYPE;
             if (item.isLoadMoreCommentsPlaceholder())
             	return MORE_ITEM_VIEW_TYPE;
-            
+
             return COMMENT_ITEM_VIEW_TYPE;
         }
-        
+
         @Override
         public int getViewTypeCount() {
         	return VIEW_TYPE_COUNT;
@@ -498,8 +527,8 @@ public class CommentsListActivity extends ListActivity
     } // End of CommentsListAdapter
     
     public ThingInfo getOpThingInfo() {
-    	if (!CollectionUtils.isEmpty(mCommentsList))
-    		return mCommentsList.get(0);
+    	if (!CollectionUtils.isEmpty(mObjectStates.mCommentsList))
+    		return mObjectStates.mCommentsList.get(0);
     	return null;
     }
 
@@ -572,19 +601,25 @@ public class CommentsListActivity extends ListActivity
      * @param commentsAdapter A new CommentsListAdapter to use. Pass in null to create a new empty one.
      */
     void resetUI(CommentsListAdapter commentsAdapter) {
-    	findViewById(R.id.loading_light).setVisibility(View.GONE);
-    	findViewById(R.id.loading_dark).setVisibility(View.GONE);
-    	
+        if( !(mCommentsAdapter != commentsAdapter && mObjectStates.mDownloadCommentsTask != null && mObjectStates.mDownloadCommentsTask.getStatus() != Status.FINISHED) ) {
+            findViewById(R.id.loading_light).setVisibility(View.GONE);
+            findViewById(R.id.loading_dark).setVisibility(View.GONE);
+        } else {
+            if (Util.isLightTheme(mSettings.getTheme()))
+                findViewById(R.id.loading_dark).setVisibility(View.GONE);
+            else
+                findViewById(R.id.loading_light).setVisibility(View.GONE);
+        }
     	if (commentsAdapter == null) {
     		// Reset the list to be empty.
-    		mCommentsList = new ArrayList<ThingInfo>();
-            mCommentsAdapter = new CommentsListAdapter(this, mCommentsList);
+            mObjectStates.mCommentsList = new ArrayList<ThingInfo>();
+            mCommentsAdapter = new CommentsListAdapter(this, mObjectStates.mCommentsList);
             setListAdapter(mCommentsAdapter);
     	} else if (mCommentsAdapter != commentsAdapter) {
     		mCommentsAdapter = commentsAdapter;
     		setListAdapter(commentsAdapter);
-    	}
-        
+        }
+
         mCommentsAdapter.mIsLoading = false;
         mCommentsAdapter.notifyDataSetChanged();  // Just in case
         getListView().setDivider(null);
@@ -1363,6 +1398,7 @@ public class CommentsListActivity extends ListActivity
     	
     	if (rowId == 0) {
     		menu.add(0, Constants.SHARE_CONTEXT_ITEM, Menu.NONE, "Share");
+    		menu.add(0, Constants.COPY_CONTEXT_ITEM, Menu.NONE, R.string.copy);
 
     		if(getOpThingInfo().isSaved()){
     			menu.add(0, Constants.UNSAVE_CONTEXT_ITEM, Menu.NONE, "Unsave");
@@ -1473,6 +1509,18 @@ public class CommentsListActivity extends ListActivity
     	case Constants.DIALOG_REPORT:
 			mReportTargetName = mCommentsAdapter.getItem(rowId).getName();
     		showDialog(Constants.DIALOG_REPORT);
+    		return true;
+    	case Constants.COPY_CONTEXT_ITEM:
+    		String url = getOpThingInfo().getUrl();
+    		int sdk = android.os.Build.VERSION.SDK_INT;
+    		if(sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
+    		    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+    		    clipboard.setText(url);
+    		} else {
+    		    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE); 
+    		    android.content.ClipData clip = android.content.ClipData.newPlainText(url,url);
+    		    clipboard.setPrimaryClip(clip);
+    		}
     		return true;
     		
 		default:

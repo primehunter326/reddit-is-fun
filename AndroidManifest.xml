@@ -20,8 +20,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="in.shick.diode"
       
-      android:versionCode="7"
-      android:versionName="1.0.5"
+      android:versionCode="11"
+      android:versionName="1.0.9"
       android:installLocation="auto"
       >
 
@@ -35,7 +35,7 @@
 
     <supports-screens />
     
-    <application android:icon="@drawable/icon" android:label="@string/app_name" android:name=".RedditIsFunApplication">
+    <application android:icon="@drawable/icon" android:label="@string/app_name" android:name=".RedditIsFunApplication" android:hardwareAccelerated="true">
         <activity android:name=".threads.ThreadsListActivity"
                   android:label="@string/app_name">
             <intent-filter>

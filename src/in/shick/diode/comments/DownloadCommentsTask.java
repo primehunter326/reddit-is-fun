@@ -1,11 +1,11 @@
 package in.shick.diode.comments;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.LinkedList;
+import android.os.AsyncTask;
+import android.text.Html;
+import android.text.Spanned;
+import android.util.Log;
+import android.view.Window;
+import android.widget.Toast;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -15,12 +15,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import android.os.AsyncTask;
-import android.text.Html;
-import android.text.Spanned;
-import android.util.Log;
-import android.view.Window;
-import android.widget.Toast;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.LinkedList;
 
 import in.shick.diode.comments.ProcessCommentsTask.DeferredCommentProcessing;
 import in.shick.diode.common.CacheInfo;
@@ -107,7 +107,7 @@ public class DownloadCommentsTask extends AsyncTask<Integer, Long, Boolean>
 			RedditSettings settings,
 			HttpClient client
 	) {
-		this.mActivity = activity;
+		attach(activity);
 		this.mSubreddit = subreddit;
 		this.mThreadId = threadId;
 		this.mSettings = settings;
@@ -224,8 +224,8 @@ public class DownloadCommentsTask extends AsyncTask<Integer, Long, Boolean>
     }
 	
 	private void replaceCommentsAtPositionUI(final Collection<ThingInfo> comments, final int position) {
-		mActivity.mCommentsList.remove(position);
-		mActivity.mCommentsList.addAll(position, comments);
+		mActivity.mObjectStates.mCommentsList.remove(position);
+		mActivity.mObjectStates.mCommentsList.addAll(position, comments);
 		mActivity.mCommentsAdapter.notifyDataSetChanged();
 	}
 	
@@ -289,7 +289,7 @@ public class DownloadCommentsTask extends AsyncTask<Integer, Long, Boolean>
 				insertedCommentIndex = 0;  // we just inserted the OP into position 0
 				
 				// at this point we've started displaying comments, so disable the loading screen
-				disableLoadingScreenKeepProgress();
+                disableLoadingScreenKeepProgress();
 			}
 			else {
 				insertedCommentIndex = mPositionOffset - 1;  // -1 because we +1 for the first comment
@@ -317,7 +317,7 @@ public class DownloadCommentsTask extends AsyncTask<Integer, Long, Boolean>
 		mActivity.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				mActivity.mCommentsList.add(0, data);
+				mActivity.mObjectStates.mCommentsList.add(0, data);
 			}
 		});
 
@@ -440,7 +440,7 @@ public class DownloadCommentsTask extends AsyncTask<Integer, Long, Boolean>
      * Call from UI Thread
      */
     private void insertCommentsUI() {
-		mActivity.mCommentsList.addAll(mDeferredAppendList);
+		mActivity.mObjectStates.mCommentsList.addAll(mDeferredAppendList);
 		mActivity.mCommentsAdapter.notifyDataSetChanged();
     }
 	
@@ -555,5 +555,14 @@ public class DownloadCommentsTask extends AsyncTask<Integer, Long, Boolean>
 	public void propertyChange(PropertyChangeEvent event) {
 		publishProgress((Long) event.getNewValue());
 	}
+    void detach() {
+        if (Constants.LOGGING) Log.d(TAG, "DownloadCommentsTask: Activity detached.");
+        mActivity=null;
+    }
+
+    void attach(CommentsListActivity activity) {
+        if (Constants.LOGGING) Log.d(TAG, "DownloadCommentsTask: Activity attached.");
+        mActivity=activity;
+    }
 }
 

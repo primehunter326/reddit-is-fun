@@ -18,6 +18,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 import in.shick.diode.R;
 import in.shick.diode.comments.CommentsListActivity;
@@ -177,7 +179,12 @@ public class BrowserActivity extends Activity {
 	public void onDestroy() {
 		super.onDestroy();
 		// Must remove the WebView from the view system before destroying.
-		webview.setVisibility(View.GONE);
+		//
+		// Fixed error related to webview deestruction:
+		// Got help from http://stackoverflow.com/questions/11995270/error-webview-destroy-called-while-still-attached
+		FrameLayout frame = (FrameLayout)findViewById(R.id.webviewframe);
+		frame.removeView(webview);
+		webview.removeAllViews();
 		webview.destroy();
 		webview = null;
 	}

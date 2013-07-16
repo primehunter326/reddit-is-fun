@@ -1,13 +1,13 @@
 package in.shick.diode.comments;
 
-import java.util.LinkedList;
-
 import android.os.AsyncTask;
 import android.text.Html;
 import android.text.Spanned;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+
+import java.util.LinkedList;
 
 import in.shick.diode.R;
 import in.shick.diode.common.Constants;
@@ -150,7 +150,7 @@ public class ProcessCommentsTask extends AsyncTask<Void, Integer, Void> {
 		if (v != null) {
 			View bodyTextView = v.findViewById(R.id.body);
 			if (bodyTextView != null) {
-				((TextView) bodyTextView).setText(mActivity.mCommentsList.get(commentIndex).getSpannedBody());
+				((TextView) bodyTextView).setText(mActivity.mObjectStates.mCommentsList.get(commentIndex).getSpannedBody());
 			}
 		}
     }
@@ -161,7 +161,7 @@ public class ProcessCommentsTask extends AsyncTask<Void, Integer, Void> {
 		if (v != null) {
 			View submitterTextView = v.findViewById(R.id.submitter);
 			if (submitterTextView != null) {
-				ThingInfo comment = mActivity.mCommentsList.get(commentIndex);
+				ThingInfo comment = mActivity.mObjectStates.mCommentsList.get(commentIndex);
 				if (comment.getSSAuthor() != null)
 					((TextView) submitterTextView).setText(comment.getSSAuthor());
 				else
