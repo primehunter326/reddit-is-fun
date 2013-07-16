@@ -1230,7 +1230,7 @@ public final class ThreadsListActivity extends ListActivity {
     		Common.goHome(this);
     		break;
     	case R.id.search:
-        	startActivityForResult(new Intent(this, RedditSearchActivity.class), Constants.ACTIVITY_SEARCH_REDDIT);
+        	startActivityForResult(new Intent(this, RedditSearchActivity.class).putExtra("subreddit", mSubreddit), Constants.ACTIVITY_SEARCH_REDDIT);
     		break;
     		
     	default:
